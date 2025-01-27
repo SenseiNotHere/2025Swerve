@@ -5,6 +5,7 @@ import commands2
 import wpimath
 import wpilib
 import typing
+import rev
 
 from commands2 import cmd, InstantCommand, RunCommand
 from commands2.button import JoystickButton
@@ -13,10 +14,13 @@ from wpimath.controller import PIDController, ProfiledPIDControllerRadians, Holo
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
 
-from constants import AutoConstants, DriveConstants, OIConstants
+from constants import AutoConstants, DriveConstants, OIConstants, LiftConstants
 from subsystems.drivesubsystem import DriveSubsystem
 
 from commands.reset_xy import ResetXY, ResetSwerveFront
+
+from subsystems.limelight_camera import LimelightCamera
+from subsystems.elevator import Elevator
 
 class RobotContainer:
     """
@@ -29,6 +33,8 @@ class RobotContainer:
     def __init__(self) -> None:
         # The robot's subsystems
         self.robotDrive = DriveSubsystem()
+        self.camera = LimelightCamera("limelight")  # name of your camera goes in parentheses
+        self.elevator = Elevator(leadMotorCANId=LiftConstants.kLeadLift, followMotorCANId=LiftConstants.kFollowLift)
 
         # The driver's controller
         self.driverController = wpilib.XboxController(OIConstants.kDriverControllerPort)
