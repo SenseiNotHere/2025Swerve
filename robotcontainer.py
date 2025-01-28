@@ -34,11 +34,12 @@ class RobotContainer:
         # The robot's subsystems
         self.robotDrive = DriveSubsystem()
         self.camera = LimelightCamera("limelight")  # name of your camera goes in parentheses
-        self.elevator = Elevator(leadMotorCANId=LiftConstants.kLeadLift, followMotorCANId=LiftConstants.kFollowLift)
+        self.elevator = Elevator(leadMotorCANId=LiftConstants.kLeadLift, followMotorCANId=LiftConstants.kFollowLift, presetSwitchPositions=(5,10,15))
 
         # The driver's controller
         self.driverController = wpilib.XboxController(OIConstants.kDriverControllerPort)
-
+        self.operatorController = wpilib.XboxController(OIConstants.kOperatorControllerPort)
+        
         # Configure the button bindings and autos
         self.configureButtonBindings()
         self.configureAutos()
@@ -65,6 +66,10 @@ class RobotContainer:
                 self.robotDrive,
             )
         )
+        self.elevator.setDefaultCommand(
+            commands2.RunCommand(lambda: self.elevator.drive(self.operatorController.getRightY()), self.elevator)
+         )
+
 
     def configureButtonBindings(self) -> None:
         """
@@ -72,13 +77,23 @@ class RobotContainer:
         instantiating a :GenericHID or one of its subclasses (Joystick or XboxController),
         and then passing it to a JoystickButton.
         """
-
+        #Driver button bindings
         xButton = JoystickButton(self.driverController, XboxController.Button.kX)
         xButton.onTrue(ResetXY(x=0.0, y=0.0, headingDegrees=0.0, drivetrain=self.robotDrive))
         xButton.whileTrue(RunCommand(self.robotDrive.setX, self.robotDrive))  # use the swerve X brake when "X" is pressed
 
         yButton = JoystickButton(self.driverController, XboxController.Button.kY)
         yButton.onTrue(ResetSwerveFront(self.robotDrive))
+        #Operator button bindings
+        # left bumper and right bumper will move elevator between presetSwitchPositions (see above)
+        leftOperatorBumper = JoystickButton(self.operatorController, XboxController.Button.kLeftBumper)
+        leftOperatorBumper.onTrue(InstantCommand(self.elevator.switchUp, self.elevator))
+        rightOperatorBumper = JoystickButton(self.operatorController, XboxController.Button.kRightBumper)
+        rightOperatorBumper.onTrue(InstantCommand(self.elevator.switchDown, self.elevator))
+
+        # the "A" button will request elevator to go to a special position of 33.0 inches
+        aOperatorButton = JoystickButton(self.driverController, XboxController.Button.kA)
+        aOperatorButton.onTrue(InstantCommand(lambda: self.elevator.setPositionGoal(33.0), self.elevator))
 
     def disablePIDSubsystems(self) -> None:
         """Disables all ProfiledPIDSubsystem and PIDSubsystem instances.

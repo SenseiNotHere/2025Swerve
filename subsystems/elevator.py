@@ -32,8 +32,8 @@ class ElevatorConstants:
     # )
 
     # which range of motion we want from this elevator? (inside what's allowed by limit switches)
-    minPositionGoal = 15  # inches
-    maxPositionGoal = 70  # inches
+    minPositionGoal = 0  # inches
+    maxPositionGoal = 28  # inches
 
     # PID configuration
     kP = 0.0662  # at first make it very small, then start tuning by increasing from there
@@ -98,12 +98,13 @@ class Elevator(Subsystem):
         self.relativeEncoder = self.leadMotor.getEncoder()  # this encoder can be used instead of absolute, if you know!
         if useAbsoluteEncoder:
             self.absoluteEncoder = self.leadMotor.getAbsoluteEncoder()
-            self.pidController = self.leadMotor.getClosedLoopController()
-            self.zeroFound = True  # if using absolute encoder, zero is already found and we can set position goals
+            if not ElevatorConstants.calibrating:
+                self.pidController = self.leadMotor.getClosedLoopController()
+                self.zeroFound = True  # if using absolute encoder, zero is already found and we can set position goals
 
         # set the initial elevator goal (if absolute encoder, current position = goal)
         goal = ElevatorConstants.minPositionGoal
-        if self.absoluteEncoder is not None:
+        if self.pidController is not None and self.absoluteEncoder is not None:
             goal = self.absoluteEncoder.getPosition()
         self.setPositionGoal(goal)
 
@@ -153,8 +154,17 @@ class Elevator(Subsystem):
         if self.followMotor is not None:
             self.followMotor.clearFaults()
 
-    def drive(self, speed):
-        self.leadMotor.set(speed)
+    def drive(self, speed, deadband=0.1, maxSpeedInchesPerSecond=5):
+        # speed is assumed to be between -1.0 and +1.0
+        if abs(speed) < deadband:
+            speed = 0
+        speed = -speed * abs(speed)  # quadratic scaling, easier for humans
+        if self.pidController is None:
+            self.leadMotor.set(speed)
+            return
+        # we are here if we have a pid controller
+        if speed != 0:
+            self.setPositionGoal(self.positionGoal + speed * maxSpeedInchesPerSecond / 50.0)  # we have 50 decisions/sec
 
     def findZero(self):
         # did we find the zero previously?
