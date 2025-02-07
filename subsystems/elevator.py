@@ -35,10 +35,10 @@ class ElevatorConstants:
     minPositionGoal = 0  # inches
     maxPositionGoal = 28  # inches
 
-    # PID configuration
-    kP = 0.0662  # at first make it very small, then start tuning by increasing from there
+    # PID configuration (only after you are done with calibrating=True)
+    kP = 0.0662  # at first make it very small like this, then start tuning by increasing from there (doubling and doubling and doubling again until you see elevator overshooting)
     kD = 0.01  # at first start from zero, and when you know your kP you can start increasing kD from some small value >0
-    kStaticGain = 0.6  # make it 3.5?
+    kStaticGain = 0.6# make it 3.5?
     kMaxOutput = 1.0
 
 
@@ -140,7 +140,7 @@ class Elevator(Subsystem):
         else:
             return self.relativeEncoder.getPosition()
 
-    def getAngleVelocity(self) -> float:
+    def getVelocity(self) -> float:
         if self.absoluteEncoder is not None:
             return self.absoluteEncoder.getVelocity()
         else:
@@ -155,10 +155,13 @@ class Elevator(Subsystem):
             self.followMotor.clearFaults()
 
     def drive(self, speed, deadband=0.1, maxSpeedInchesPerSecond=5):
+        # if we aren't calibrating, zero must be found first (before we can drive)
+        if not self.zeroFound and not ElevatorConstants.calibrating:
+            return
         # speed is assumed to be between -1.0 and +1.0
         if abs(speed) < deadband:
             speed = 0
-        speed = -speed * abs(speed)  # quadratic scaling, easier for humans
+        speed = speed * abs(speed)  # quadratic scaling, easier for humans
         if self.pidController is None:
             self.leadMotor.set(speed)
             return
@@ -171,7 +174,7 @@ class Elevator(Subsystem):
         if self.zeroFound:
             return
         # did we find the zero just now?
-        if self.reverseLimit.get():
+        if self.reverseLimit.get() and not self.forwardLimit.get():
             self.zeroFound = True
             self.leadMotor.set(0)  # zero setpoint now
             self.relativeEncoder.setPosition(0.0)  # reset the relative encoder
@@ -183,7 +186,7 @@ class Elevator(Subsystem):
 
     def getState(self) -> str:
         if self.forwardLimit.get():
-            return "forward limit" if not self.reverseLimit.get() else "both limits"
+            return "forward limit" if not self.reverseLimit.get() else "both limits (CAN disconn?)"
         elif self.reverseLimit.get():
             return "reverse limit"
         elif not self.zeroFound:

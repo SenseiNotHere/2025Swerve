@@ -8,6 +8,7 @@ import typing
 import rev
 
 from commands2 import cmd, InstantCommand, RunCommand
+from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward, IntakeEjectGamepieceBackward
 from commands2.button import JoystickButton
 from wpilib import XboxController
 from wpimath.controller import PIDController, ProfiledPIDControllerRadians, HolonomicDriveController
@@ -21,6 +22,7 @@ from commands.reset_xy import ResetXY, ResetSwerveFront
 
 from subsystems.limelight_camera import LimelightCamera
 from subsystems.elevator import Elevator
+from subsystems.intake import Intake
 
 class RobotContainer:
     """
@@ -35,6 +37,8 @@ class RobotContainer:
         self.robotDrive = DriveSubsystem()
         self.camera = LimelightCamera("limelight")  # name of your camera goes in parentheses
         self.elevator = Elevator(leadMotorCANId=LiftConstants.kLeadLift, followMotorCANId=LiftConstants.kFollowLift, presetSwitchPositions=(5,10,15))
+        self.intake = Intake(leaderCanID=11, leaderInverted=True, followerCanID=12, followerInverted=False)
+
 
         # The driver's controller
         self.driverController = wpilib.XboxController(OIConstants.kDriverControllerPort)
@@ -84,6 +88,7 @@ class RobotContainer:
 
         yButton = JoystickButton(self.driverController, XboxController.Button.kY)
         yButton.onTrue(ResetSwerveFront(self.robotDrive))
+        
         #Operator button bindings
         # left bumper and right bumper will move elevator between presetSwitchPositions (see above)
         leftOperatorBumper = JoystickButton(self.operatorController, XboxController.Button.kLeftBumper)
@@ -92,8 +97,17 @@ class RobotContainer:
         rightOperatorBumper.onTrue(InstantCommand(self.elevator.switchDown, self.elevator))
 
         # the "A" button will request elevator to go to a special position of 33.0 inches
-        aOperatorButton = JoystickButton(self.driverController, XboxController.Button.kA)
-        aOperatorButton.onTrue(InstantCommand(lambda: self.elevator.setPositionGoal(33.0), self.elevator))
+        yOperatorButton = JoystickButton(self.driverController, XboxController.Button.kY)
+        yOperatorButton.onTrue(InstantCommand(lambda: self.elevator.setPositionGoal(33.0), self.elevator))
+        # when "A" button is pressed, intake the gamepiece
+        aOperatorButton = JoystickButton(self.operatorController, XboxController.Button.kA)
+        intakeCmd = IntakeGamepiece(self.intake, speed=0.2)
+        aOperatorButton.onTrue(intakeCmd)
+
+        # when "B" button is pressed, start feeding the gamepiece forward and give it 0.3 seconds to complete
+        bButton = JoystickButton(self.operatorController, XboxController.Button.kB)
+        intakeFeedFwdCmd = IntakeFeedGamepieceForward(self.intake, speed=0.5).withTimeout(0.3)
+        bButton.onTrue(intakeFeedFwdCmd)
 
     def disablePIDSubsystems(self) -> None:
         """Disables all ProfiledPIDSubsystem and PIDSubsystem instances.
