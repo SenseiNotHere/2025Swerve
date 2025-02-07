@@ -9,7 +9,7 @@ import rev
 
 from commands2 import cmd, InstantCommand, RunCommand
 from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward, IntakeEjectGamepieceBackward
-from commands2.button import JoystickButton
+from commands2.button import JoystickButton, POVButton
 from wpilib import XboxController
 from wpimath.controller import PIDController, ProfiledPIDControllerRadians, HolonomicDriveController
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
@@ -44,7 +44,6 @@ class RobotContainer:
 
         # The driver's controller
         self.driverController = wpilib.XboxController(OIConstants.kDriverControllerPort)
-        self.operatorController = wpilib.XboxController(OIConstants.kOperatorControllerPort)
         
         # Configure the button bindings and autos
         self.configureButtonBindings()
@@ -84,32 +83,40 @@ class RobotContainer:
         and then passing it to a JoystickButton.
         """
         #Driver button bindings
-        xDriverButton = JoystickButton(self.driverController, XboxController.Button.kX)
-        xDriverButton.onTrue(ResetXY(x=0.0, y=0.0, headingDegrees=0.0, drivetrain=self.robotDrive))
-        xDriverButton.whileTrue(RunCommand(self.robotDrive.setX, self.robotDrive))  # use the swerve X brake when "X" is pressed
+        #Not used
+        povUpDriverButton = POVButton(self.driverController, 0)  # 0 degrees for POV up
+        povUpDriverButton.onTrue(ResetXY(x=0.0, y=0.0, headingDegrees=0.0, drivetrain=self.robotDrive))
+        povUpDriverButton.whileTrue(RunCommand(self.robotDrive.setX, self.robotDrive))  # use the swerve X brake when "X" is pressed
 
-        yDriverButton = JoystickButton(self.driverController, XboxController.Button.kY)
-        yDriverButton.onTrue(ResetSwerveFront(self.robotDrive))
-
+        povDownDriverButton = POVButton(self.driverController, 180)
+        povDownDriverButton.onTrue(ResetSwerveFront(self.robotDrive))
         
-        xOperatorButton = JoystickButton(self.operatorController, XboxController.Button.kX)
+        #Used
+            #X =
+            #Y = Look + align with AprilTag
+            #B = 
+            #A = intake
+        
+        aDriverButton = JoystickButton(self.driverController, XboxController.Button.kA)
         intakeCmd = IntakeGamepiece(self.intake,speed=0.3)
-        xOperatorButton.whileTrue(intakeCmd)
+        aDriverButton.whileTrue(intakeCmd)
         
-        aOperatorButton = JoystickButton(self.operatorController, XboxController.Button.kA)
+        bDriverButton = JoystickButton(self.driverController, XboxController.Button.kB)
         intakeFeedFwdCmdUpper = IntakeFeedGamepieceForward(self.intake, motor1speed=0.5).withTimeout(1.0)
-        aOperatorButton.whileTrue(intakeFeedFwdCmdUpper)
+        bDriverButton.whileTrue(intakeFeedFwdCmdUpper)
         
 
-        bOperatorButton = JoystickButton(self.operatorController, XboxController.Button.kB)
+        xOperatorButton = JoystickButton(self.driverController, XboxController.Button.kX)
         intakeFeedFwdCmdLower = IntakeFeedGamepieceForward(self.intake, motor1speed=0.5, motor2speed=0.2).withTimeout(1.5)
-        bOperatorButton.whileTrue(intakeFeedFwdCmdLower)
+        xOperatorButton.whileTrue(intakeFeedFwdCmdLower)
         
         #Operator button bindings
+            #Left Bumper = Elevator Up
+            #Right Bumper = Elevator Down
         # left bumper and right bumper will move elevator between presetSwitchPositions (see above) 
-        leftOperatorBumper = JoystickButton(self.operatorController, XboxController.Button.kLeftBumper)
+        leftOperatorBumper = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
         leftOperatorBumper.onTrue(InstantCommand(self.elevator.switchUp, self.elevator))
-        rightOperatorBumper = JoystickButton(self.operatorController, XboxController.Button.kRightBumper)
+        rightOperatorBumper = JoystickButton(self.driverController, XboxController.Button.kRightBumper)
         rightOperatorBumper.onTrue(InstantCommand(self.elevator.switchDown, self.elevator))
 
         # the "A" button will request elevator to go to a special position of 33.0 inches

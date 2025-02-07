@@ -70,6 +70,7 @@ class Intake(Subsystem):
         # ^^ do not reset and do not persist, just disable the switch
 
     def isGamepieceInside(self) -> bool:
+        SmartDashboard.putBoolean("Game Piece In:", self.limitSwitch.get())
         return self.limitSwitch.get()
 
     def noGamepieceInside(self) -> bool:
@@ -80,38 +81,38 @@ class Intake(Subsystem):
 
     def intakeGamepiece(self, speed=0.25):
         """
-        If the gamepiece is not inside, try to intake it
+        If the game piece is not inside, try to intake it
         """
         self.enableLimitSwitch()
         self._setSpeed(speed)
-        print("Intake::intakeGamepiece")
+        print("Intaking game piece!")
 
     def feedGamepieceForward(self, speed=1.0, motor2speed=None):
         """
-        Rush the gamepiece forward into the shooter, at full speed (100%)
+        Rush the game piece forward into the shooter, at full speed (100%)
         """
         self.disableLimitSwitch()
         self._setSpeed(speed, motor2speed)
-        print("Intake::feedGamepieceForward")
+        print("Shooting game piece!")
 
     def ejectGamepieceBackward(self, speed=0.25, motor2speed=None):
         """
-        Eject the gamepiece back out of the intake
+        Eject the game piece back out of the intake
         """
         self.disableLimitSwitch()
         self._setSpeed(-speed, -motor2speed if motor2speed is not None else -speed)
-        print("Intake::ejectGamepiece")
+        print("WARNING: EJECTING GAME PIECE!")
 
     def intakeGamepieceDespiteLimitSwitch(self, speed=0.25):
         """
-        Even if (possibly broken) limit switch thinks that the gamepiece is already inside, try to intake it
+        Even if (possibly broken) limit switch thinks that the game piece is already inside, try to intake it
         """
         self.disableLimitSwitch()
         self._setSpeed(speed)
 
     def stop(self):
         self._setSpeed(0)
-        print("Intake::stop")
+        print("Stopping intake!")
 
     def _setSpeed(self, motor1speed, motor2speed=None):
         self.motor.set(motor1speed)
