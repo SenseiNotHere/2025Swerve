@@ -25,17 +25,18 @@ class IntakeGamepiece(commands2.Command):
 
 
 class IntakeFeedGamepieceForward(commands2.Command):
-    def __init__(self, intake: Intake, speed=0.25):
+    def __init__(self, intake: Intake, motor1speed=0.5, motor2speed=0.5):
         super().__init__()
         self.intake = intake
-        self.speed = speed
+        self.motor1speed = motor1speed
+        self.motor2speed = motor2speed
         self.addRequirements(intake)
 
     def end(self, interrupted: bool):
         self.intake.stop()  # stop at the end
 
     def initialize(self):
-        self.intake.feedGamepieceForward(self.speed)
+        self.intake.feedGamepieceForward(self.motor1speed, self.motor2speed)
 
     def isFinished(self) -> bool:
         return False  # never finishes, you should use it with "withTimeout(...)"

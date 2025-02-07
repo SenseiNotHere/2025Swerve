@@ -73,6 +73,9 @@ class LiftConstants:
     kLeadLift = 8
     kFollowLift = 9
 
+class IntakeConstants:
+    kLeadIntake = 11
+    kFollowIntake = 12
 def getSwerveDrivingMotorConfig() -> SparkBaseConfig:
     drivingConfig = SparkBaseConfig()
     drivingConfig.setIdleMode(SparkBaseConfig.IdleMode.kBrake)

@@ -33,12 +33,12 @@ class ElevatorConstants:
 
     # which range of motion we want from this elevator? (inside what's allowed by limit switches)
     minPositionGoal = 0  # inches
-    maxPositionGoal = 28  # inches
+    maxPositionGoal = 13  # inches
 
     # PID configuration (only after you are done with calibrating=True)
     kP = 0.0662  # at first make it very small like this, then start tuning by increasing from there (doubling and doubling and doubling again until you see elevator overshooting)
     kD = 0.01  # at first start from zero, and when you know your kP you can start increasing kD from some small value >0
-    kStaticGain = 0.6# make it 3.5?
+    kStaticGain = 0.0 # make it 3.5?
     kMaxOutput = 1.0
 
 
@@ -161,7 +161,7 @@ class Elevator(Subsystem):
         # speed is assumed to be between -1.0 and +1.0
         if abs(speed) < deadband:
             speed = 0
-        speed = speed * abs(speed)  # quadratic scaling, easier for humans
+        speed = -speed * abs(speed)  # quadratic scaling, easier for humans
         if self.pidController is None:
             self.leadMotor.set(speed)
             return
