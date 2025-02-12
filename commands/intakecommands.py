@@ -25,7 +25,7 @@ class IntakeGamepiece(commands2.Command):
 
 
 class IntakeFeedGamepieceForward(commands2.Command):
-    def __init__(self, intake: Intake, motor1speed=0.5, motor2speed=0.5):
+    def __init__(self, intake: Intake, motor1speed, motor2speed=None):
         super().__init__()
         self.intake = intake
         self.motor1speed = motor1speed

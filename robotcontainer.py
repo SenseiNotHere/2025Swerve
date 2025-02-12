@@ -8,12 +8,13 @@ import typing
 import rev
 
 from commands2 import cmd, InstantCommand, RunCommand
-from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward, IntakeEjectGamepieceBackward
+from commands.intakecommands import IntakeGamepiece, IntakeFeedGamepieceForward
 from commands2.button import JoystickButton, POVButton
 from wpilib import XboxController
 from wpimath.controller import PIDController, ProfiledPIDControllerRadians, HolonomicDriveController
 from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.trajectory import TrajectoryConfig, TrajectoryGenerator
+from navx import AHRS
 
 from constants import AutoConstants, DriveConstants, OIConstants, LiftConstants, IntakeConstants
 from subsystems.drivesubsystem import DriveSubsystem
@@ -39,12 +40,13 @@ class RobotContainer:
         self.elevator = Elevator(leadMotorCANId=LiftConstants.kLeadLift, followMotorCANId=LiftConstants.kFollowLift,
                                  presetSwitchPositions=(0,4.333,12.51))
         self.intake = Intake(leaderCanID=IntakeConstants.kLeadIntake, leaderInverted=True,
-                             followerCanID=IntakeConstants.kFollowIntake, followerInverted=False)
+                             followerCanID=IntakeConstants.kFollowIntake, followerInverted=False, rangeFinder=None)
 
 
         # The driver's controller
         self.driverController = wpilib.XboxController(OIConstants.kDriverControllerPort)
-        
+        self.operatorController = wpilib.XboxController(OIConstants.kOperatorControllerPort)
+
         # Configure the button bindings and autos
         self.configureButtonBindings()
         self.configureAutos()
@@ -97,16 +99,16 @@ class RobotContainer:
             #B = 
             #A = intake
         
-        aDriverButton = JoystickButton(self.driverController, XboxController.Button.kA)
+        aDriverButton = JoystickButton(self.operatorController, XboxController.Button.kA)
         intakeCmd = IntakeGamepiece(self.intake,speed=0.3)
         aDriverButton.whileTrue(intakeCmd)
         
-        bDriverButton = JoystickButton(self.driverController, XboxController.Button.kB)
+        bDriverButton = JoystickButton(self.operatorController, XboxController.Button.kB)
         intakeFeedFwdCmdUpper = IntakeFeedGamepieceForward(self.intake, motor1speed=0.5).withTimeout(1.0)
         bDriverButton.whileTrue(intakeFeedFwdCmdUpper)
         
 
-        xOperatorButton = JoystickButton(self.driverController, XboxController.Button.kX)
+        xOperatorButton = JoystickButton(self.operatorController, XboxController.Button.kX)
         intakeFeedFwdCmdLower = IntakeFeedGamepieceForward(self.intake, motor1speed=0.5, motor2speed=0.2).withTimeout(1.5)
         xOperatorButton.whileTrue(intakeFeedFwdCmdLower)
         
@@ -114,10 +116,10 @@ class RobotContainer:
             #Left Bumper = Elevator Up
             #Right Bumper = Elevator Down
         # left bumper and right bumper will move elevator between presetSwitchPositions (see above) 
-        leftOperatorBumper = JoystickButton(self.driverController, XboxController.Button.kLeftBumper)
-        leftOperatorBumper.onTrue(InstantCommand(self.elevator.switchUp, self.elevator))
-        rightOperatorBumper = JoystickButton(self.driverController, XboxController.Button.kRightBumper)
-        rightOperatorBumper.onTrue(InstantCommand(self.elevator.switchDown, self.elevator))
+        leftDriverBumper = JoystickButton(self.operatorController, XboxController.Button.kLeftBumper)
+        leftDriverBumper.onTrue(InstantCommand(self.elevator.switchUp, self.elevator))
+        rightDriverBumper = JoystickButton(self.operatorController, XboxController.Button.kRightBumper)
+        rightDriverBumper.onTrue(InstantCommand(self.elevator.switchDown, self.elevator))
 
         # the "A" button will request elevator to go to a special position of 33.0 inches
         #aOperatorButton = JoystickButton(self.operatorController, XboxController.Button.kA)
@@ -217,3 +219,13 @@ class RobotContainer:
         :returns: the command to run in test mode (to exercise all systems)
         """
         return None
+
+
+class Gyro(wpilib.TimedRobot):
+    def robotInit(self):
+        self.gyro = AHRS.create_spi()
+        self.timer = wpilib.Timer()
+
+    def robotPeriodic(self):
+        currentAngle = self.gyro.getAngle()
+        wpilib.SmartDashboard.putNumber("Gyro Angle", currentAngle)
