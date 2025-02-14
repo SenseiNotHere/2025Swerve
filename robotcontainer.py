@@ -18,12 +18,20 @@ from navx import AHRS
 
 from constants import AutoConstants, DriveConstants, OIConstants, LiftConstants, IntakeConstants
 from subsystems.drivesubsystem import DriveSubsystem
-
-from commands.reset_xy import ResetXY, ResetSwerveFront
-
 from subsystems.limelight_camera import LimelightCamera
 from subsystems.elevator import Elevator
 from subsystems.intake import Intake
+from subsystems.singleIntake import SingleIntake
+
+from commands.reset_xy import ResetXY, ResetSwerveFront
+from commands.aimtodirection import AimToDirection
+from commands.findobject import FindObject
+from commands.followobject import FollowObject
+from commands.gotopoint import GoToPoint
+from commands.jerky_trajectory import JerkyTrajectory
+from commands.setcamerapipeline import SetCameraPipeline
+from commands.swervetopoint import SwerveToPoint
+
 
 class RobotContainer:
     """
@@ -38,9 +46,10 @@ class RobotContainer:
         self.robotDrive = DriveSubsystem()
         self.camera = LimelightCamera("limelight")  # name of your camera goes in parentheses
         self.elevator = Elevator(leadMotorCANId=LiftConstants.kLeadLift, followMotorCANId=LiftConstants.kFollowLift,
-                                 presetSwitchPositions=(0,4.333,12.51))
+                                 presetSwitchPositions=(0.1,4.333,12.51))
         self.intake = Intake(leaderCanID=IntakeConstants.kLeadIntake, leaderInverted=True,
                              followerCanID=IntakeConstants.kFollowIntake, followerInverted=False, rangeFinder=None)
+        self.singleIntake = SingleIntake(intakeCanID=13, intakeInverted=True,)
 
 
         # The driver's controller
@@ -94,32 +103,44 @@ class RobotContainer:
         povDownDriverButton.onTrue(ResetSwerveFront(self.robotDrive))
         
         #Used
-            #X =
-            #Y = Look + align with AprilTag
-            #B = 
-            #A = intake
-        
-        aDriverButton = JoystickButton(self.operatorController, XboxController.Button.kA)
-        intakeCmd = IntakeGamepiece(self.intake,speed=0.3)
-        aDriverButton.whileTrue(intakeCmd)
-        
-        bDriverButton = JoystickButton(self.operatorController, XboxController.Button.kB)
+            #X = Different speeds feed
+            #Y = Same speed feed
+            #B = Look + align with AprilTag
+            #A =
+
+        bDriverButton = JoystickButton(self.driverController, XboxController.Button.kB)
         intakeFeedFwdCmdUpper = IntakeFeedGamepieceForward(self.intake, motor1speed=0.5).withTimeout(1.0)
-        bDriverButton.whileTrue(intakeFeedFwdCmdUpper)
+        bDriverButton.onTrue(intakeFeedFwdCmdUpper) #Intake same speed
         
 
-        xOperatorButton = JoystickButton(self.operatorController, XboxController.Button.kX)
+        xDriverButton = JoystickButton(self.driverController, XboxController.Button.kX)
         intakeFeedFwdCmdLower = IntakeFeedGamepieceForward(self.intake, motor1speed=0.5, motor2speed=0.2).withTimeout(1.5)
-        xOperatorButton.whileTrue(intakeFeedFwdCmdLower)
+        xDriverButton.onTrue(intakeFeedFwdCmdLower) #Intake different speeds
         
         #Operator button bindings
             #Left Bumper = Elevator Up
             #Right Bumper = Elevator Down
+            #A = Intake
+            #X =
+            #B =
+            #Y = Single Intake
         # left bumper and right bumper will move elevator between presetSwitchPositions (see above) 
         leftDriverBumper = JoystickButton(self.operatorController, XboxController.Button.kLeftBumper)
         leftDriverBumper.onTrue(InstantCommand(self.elevator.switchUp, self.elevator))
         rightDriverBumper = JoystickButton(self.operatorController, XboxController.Button.kRightBumper)
         rightDriverBumper.onTrue(InstantCommand(self.elevator.switchDown, self.elevator))
+
+        aOperatorButton = JoystickButton(self.operatorController, XboxController.Button.kA)
+        intakeCmd = IntakeGamepiece(self.intake,speed=0.2)
+        aOperatorButton.whileTrue(intakeCmd) #Intake
+
+        yOperatorButton =JoystickButton(self.operatorController, XboxController.Button.kY)
+        singleIntakeCmd = IntakeGamepiece(self.singleIntake, speed=0.4)
+        yOperatorButton.whileTrue(singleIntakeCmd)
+
+        bOperatorButton =JoystickButton(self.operatorController, XboxController.Button.kB)
+        singleIntakeCmd = IntakeGamepiece(self.singleIntake, speed=-0.4)
+        bOperatorButton.whileTrue(singleIntakeCmd)
 
         # the "A" button will request elevator to go to a special position of 33.0 inches
         #aOperatorButton = JoystickButton(self.operatorController, XboxController.Button.kA)
@@ -142,7 +163,13 @@ class RobotContainer:
         self.chosenAuto.setDefaultOption("trajectory example", self.getAutonomousTrajectoryExample)
         self.chosenAuto.addOption("left blue", self.getAutonomousLeftBlue)
         self.chosenAuto.addOption("left red", self.getAutonomousLeftRed)
+        self.chosenAuto.addOption("middle blue", self.getAutonomousMiddleBlue)
         wpilib.SmartDashboard.putData("Chosen Auto", self.chosenAuto)
+
+    def getAutonomousMiddleBlue(self):
+        setStartPose = ResetXY(x=0.0, y=0.0, headingDegrees=0.0, drivetrain=self.robotDrive)
+
+
 
     def getAutonomousLeftBlue(self):
         setStartPose = ResetXY(x=0.783, y=6.686, headingDegrees=+60, drivetrain=self.robotDrive)

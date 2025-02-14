@@ -4,7 +4,7 @@
 # the WPILib BSD license file in the root directory of this project.
 #
 
-from wpilib import Timer
+from wpilib import Timer, CameraServer
 from commands2 import Subsystem
 from ntcore import NetworkTableInstance
 
