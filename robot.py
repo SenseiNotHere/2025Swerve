@@ -8,7 +8,6 @@
 import typing
 import wpilib
 import commands2
-from wpilib import CameraServer
 
 from robotcontainer import RobotContainer
 

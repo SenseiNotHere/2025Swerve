@@ -1,6 +1,7 @@
 from commands2 import Subsystem
 from rev import SparkMax, SparkBase, SparkLowLevel, SparkBaseConfig, LimitSwitchConfig
 from wpilib import SmartDashboard
+from wpilib import SmartDashboard
 
 
 class SingleIntake(Subsystem):

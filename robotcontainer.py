@@ -46,7 +46,7 @@ class RobotContainer:
         self.robotDrive = DriveSubsystem()
         self.camera = LimelightCamera("limelight")  # name of your camera goes in parentheses
         self.elevator = Elevator(leadMotorCANId=LiftConstants.kLeadLift, followMotorCANId=LiftConstants.kFollowLift,
-                                 presetSwitchPositions=(0.1,4.333,12.51))
+                                 presetSwitchPositions=(0.1,4.533,13))
         self.intake = Intake(leaderCanID=IntakeConstants.kLeadIntake, leaderInverted=True,
                              followerCanID=IntakeConstants.kFollowIntake, followerInverted=False, rangeFinder=None)
         self.singleIntake = SingleIntake(intakeCanID=13, intakeInverted=True,)
@@ -250,7 +250,6 @@ class RobotContainer:
 
 class Gyro(wpilib.TimedRobot):
     def robotInit(self):
-        self.gyro = AHRS.create_spi()
         self.timer = wpilib.Timer()
 
     def robotPeriodic(self):
