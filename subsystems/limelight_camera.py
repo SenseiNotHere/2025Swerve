@@ -1,13 +1,6 @@
-#
-# Copyright (c) FIRST and other WPILib contributors.
-# Open Source Software; you can modify and/or share it under the terms of
-# the WPILib BSD license file in the root directory of this project.
-#
-
-from wpilib import Timer, CameraServer
+from wpilib import Timer, CameraServer, SmartDashboard
 from commands2 import Subsystem
 from ntcore import NetworkTableInstance
-
 
 class LimelightCamera(Subsystem):
     def __init__(self, cameraName: str) -> None:
@@ -21,8 +14,6 @@ class LimelightCamera(Subsystem):
 
         self.pipelineIndexRequest = self.table.getDoubleTopic("pipeline").publish()
         self.pipelineIndex = self.table.getDoubleTopic("getpipe").getEntry(-1)
-        # "cl" and "tl" are additional latencies in milliseconds
-
         self.ledMode = self.table.getIntegerTopic("ledMode").getEntry(-1)
         self.camMode = self.table.getIntegerTopic("camMode").getEntry(-1)
         self.tx = self.table.getDoubleTopic("tx").getEntry(0.0)
@@ -69,6 +60,12 @@ class LimelightCamera(Subsystem):
             print(f"Camera {self.cameraName} is " + ("UPDATING" if heartbeating else "NO LONGER UPDATING"))
         self.heartbeating = heartbeating
 
+    def setPiPMode(self, mode: int):
+        """
+        Sets the picture-in-picture mode.
+        mode: 0 = Side-by-Side, 1 = Secondary Camera in Lower-Right Corner
+        """
+        self.table.putNumber("stream", mode)
 
 def _fix_name(name: str):
     if not name:
