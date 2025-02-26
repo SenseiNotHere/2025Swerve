@@ -29,9 +29,9 @@ class DriveConstants:
     kMaxSpeedMetersPerSecond = 4.8
     kMaxAngularSpeed = math.tau  # radians per second
 
-    kDirectionSlewRate = 1.2  # radians per second
-    kMagnitudeSlewRate = 1.8  # percent per second (1 = 100%)
-    kRotationalSlewRate = 2.0  # percent per second (1 = 100%)
+    kDirectionSlewRate = 0.005  # radians per second
+    kMagnitudeSlewRate = 1.0  # percent per second (1 = 100%)
+    kRotationalSlewRate = 1.0  # percent per second (1 = 100%)
 
     # Chassis configuration
     kTrackWidth = units.inchesToMeters(26.5)
@@ -48,26 +48,64 @@ class DriveConstants:
     kDriveKinematics = SwerveDrive4Kinematics(*kModulePositions)
 
     # set it to True if you were using a ruler for zeroing and want to ignore the offsets below
-    kAssumeZeroOffsets = True
+    kAssumeZeroOffsets = False
 
     # set the above to == False, if you are using Rev zeroing tool (and you have to tinker with offsets below)
-    kFrontLeftChassisAngularOffset = -math.pi / 2
+    kFrontLeftChassisAngularOffset = units.degreesToRadians(190)
     kFrontRightChassisAngularOffset = 0
-    kBackLeftChassisAngularOffset = math.pi
-    kBackRightChassisAngularOffset = math.pi / 2
+    kBackLeftChassisAngularOffset = units.degreesToRadians(190)
+    kBackRightChassisAngularOffset = 0
 
     # SPARK MAX CAN IDs
-    kFrontLeftDrivingCanId = 1
-    kRearLeftDrivingCanId = 2
-    kFrontRightDrivingCanId = 3
-    kRearRightDrivingCanId = 4
+    kFrontLeftDrivingCanId = 2
+    kRearLeftDrivingCanId = 10
+    kFrontRightDrivingCanId = 4
+    kRearRightDrivingCanId = 6
 
-    kFrontLeftTurningCanId = 5
-    kRearLeftTurningCanId = 6
-    kFrontRightTurningCanId = 7
-    kRearRightTurningCanId = 8
+    kFrontLeftTurningCanId = 3
+    kRearLeftTurningCanId = 1
+    kFrontRightTurningCanId = 5
+    kRearRightTurningCanId = 7
 
     kGyroReversed = -1  # can be +1 if not flipped (affects field-relative driving)
+
+class LiftConstants:
+    kLeadLift = 8
+    kFollowLift = 9
+
+class IntakeConstants:
+    kLeadIntake = 11
+    kFollowIntake = 12
+    kIntake = 13
+
+def getSwerveDrivingMotorConfig() -> SparkBaseConfig:
+    drivingConfig = SparkBaseConfig()
+    drivingConfig.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
+    drivingConfig.smartCurrentLimit(ModuleConstants.kDrivingMotorCurrentLimit)
+    drivingConfig.encoder.positionConversionFactor(ModuleConstants.kDrivingEncoderPositionFactor)
+    drivingConfig.encoder.velocityConversionFactor(ModuleConstants.kDrivingEncoderVelocityFactor)
+    drivingConfig.closedLoop.setFeedbackSensor(ClosedLoopConfig.FeedbackSensor.kPrimaryEncoder)
+    drivingConfig.closedLoop.pid(ModuleConstants.kDrivingP, ModuleConstants.kDrivingI, ModuleConstants.kDrivingD)
+    drivingConfig.closedLoop.velocityFF(ModuleConstants.kDrivingFF)
+    drivingConfig.closedLoop.outputRange(ModuleConstants.kDrivingMinOutput, ModuleConstants.kDrivingMaxOutput)
+    return drivingConfig
+
+
+def getSwerveTurningMotorConfig(turnMotorInverted: bool) -> SparkBaseConfig:
+    turningConfig = SparkBaseConfig()
+    turningConfig.inverted(turnMotorInverted)
+    turningConfig.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
+    turningConfig.smartCurrentLimit(ModuleConstants.kTurningMotorCurrentLimit)
+    turningConfig.absoluteEncoder.positionConversionFactor(ModuleConstants.kTurningEncoderPositionFactor)
+    turningConfig.absoluteEncoder.velocityConversionFactor(ModuleConstants.kTurningEncoderVelocityFactor)
+    turningConfig.absoluteEncoder.inverted(ModuleConstants.kTurningEncoderInverted)
+    turningConfig.closedLoop.setFeedbackSensor(ClosedLoopConfig.FeedbackSensor.kAbsoluteEncoder)
+    turningConfig.closedLoop.pid(ModuleConstants.kTurningP, ModuleConstants.kTurningI, ModuleConstants.kTurningD)
+    turningConfig.closedLoop.velocityFF(ModuleConstants.kTurningFF)
+    turningConfig.closedLoop.outputRange(ModuleConstants.kTurningMinOutput, ModuleConstants.kTurningMaxOutput)
+    turningConfig.closedLoop.positionWrappingEnabled(True)
+    turningConfig.closedLoop.positionWrappingInputRange(0, ModuleConstants.kTurningEncoderPositionFactor)
+    return turningConfig
 
 
 def getSwerveDrivingMotorConfig() -> SparkBaseConfig:
@@ -104,7 +142,7 @@ class ModuleConstants:
     # WATCH OUT:
     #  - one or both of two constants below need to be flipped from True to False (by trial and error)
     #  , depending which swerve module you have (MK4i, MK4n, Rev, WCP, ThriftyBot, etc)
-    kTurningEncoderInverted = True
+    kTurningEncoderInverted = False
     kTurningMotorInverted = True
 
     # The MAXSwerve module can be configured with one of three pinion gears: 12T, 13T, or 14T.
@@ -161,6 +199,8 @@ class ModuleConstants:
 class OIConstants:
     kDriverControllerPort = 0
     kDriveDeadband = 0.05
+    kOperatorControllerPort = 1
+    kOperatorDeadband = 0.05
 
 
 class AutoConstants:
