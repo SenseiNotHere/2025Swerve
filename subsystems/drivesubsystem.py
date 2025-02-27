@@ -155,6 +155,9 @@ class DriveSubsystem(Subsystem):
         )
         self.odometryHeadingOffset += dRot
 
+    def stop(self) -> None:
+        self.arcadeDrive(0, 0)
+
     def arcadeDrive(
         self,
         xSpeed: float,
