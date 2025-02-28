@@ -51,11 +51,10 @@ class DriveConstants:
     kAssumeZeroOffsets = False
 
     # set the above to == False, if you are using Rev zeroing tool (and you have to tinker with offsets below)
-    kFrontLeftChassisAngularOffset = units.degreesToRadians(190)
+    kFrontLeftChassisAngularOffset = units.degreesToRadians(177)
     kFrontRightChassisAngularOffset = 0
-    kBackLeftChassisAngularOffset = units.degreesToRadians(190)
+    kBackLeftChassisAngularOffset = units.degreesToRadians(183)
     kBackRightChassisAngularOffset = 0
-
     # SPARK MAX CAN IDs
     kFrontLeftDrivingCanId = 2
     kRearLeftDrivingCanId = 10

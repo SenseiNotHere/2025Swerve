@@ -9,6 +9,24 @@
           "data": {
             "pathName": "Start (1) BL"
           }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Start to Station (2) BL"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Station to Reef (3) BL"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Reef to Station (4) BL"
+          }
         }
       ]
     }
