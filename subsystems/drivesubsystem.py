@@ -351,3 +351,6 @@ class DriveSubsystem(Subsystem):
         :returns: The turn rate of the robot, in degrees per second
         """
         return self.getTurnRate() * 180 / math.pi
+
+    def stop(self):
+        self.arcadeDrive(0,0)
