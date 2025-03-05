@@ -13,10 +13,11 @@ from commands.aimtodirection import AimToDirectionConstants
 from commands.gotopoint import GoToPointConstants
 
 from wpimath.geometry import Rotation2d, Translation2d, Pose2d
+from wpilib import SmartDashboard
 
 
 class SwerveToPoint(commands2.Command):
-    def __init__(self, x, y, headingDegrees, drivetrain: DriveSubsystem, speed=1.0, slowDownAtFinish=True) -> None:
+    def __init__(self, x, y, headingDegrees, drivetrain: DriveSubsystem, speed=1.0, slowDownAtFinish=True, rateLimit=False) -> None:
         super().__init__()
         self.targetPose = None
         self.targetPoint = Translation2d(x, y)
@@ -29,6 +30,7 @@ class SwerveToPoint(commands2.Command):
 
         self.speed = speed
         self.stop = slowDownAtFinish
+        self.rateLimit = rateLimit
         self.drivetrain = drivetrain
         self.addRequirements(drivetrain)
 
@@ -46,14 +48,18 @@ class SwerveToPoint(commands2.Command):
         self.initialDistance = self.initialPosition.distance(self.targetPose.translation())
         self.overshot = False
 
+        SmartDashboard.putString("command/c" + self.__class__.__name__, "running")
+
     def execute(self):
         currentXY = self.drivetrain.getPose()
         xDistance, yDistance = self.targetPose.x - currentXY.x, self.targetPose.y - currentXY.y
         totalDistance = self.targetPose.translation().distance(currentXY.translation())
 
-        totalSpeed = GoToPointConstants.kPTranslate * totalDistance
-        if GoToPointConstants.kUseSqrtControl:
-            totalSpeed = math.sqrt(0.5 * totalSpeed)
+        totalSpeed = abs(self.speed)
+        if self.stop:  # proportional control: start slowing down if close to finish
+            totalSpeed = GoToPointConstants.kPTranslate * totalDistance
+            if GoToPointConstants.kUseSqrtControl:
+                totalSpeed = math.sqrt(0.5 * totalSpeed)
 
         if totalSpeed > abs(self.speed):
             totalSpeed = abs(self.speed)
@@ -67,7 +73,7 @@ class SwerveToPoint(commands2.Command):
             ySpeed = totalSpeed * yDistance / totalDistance
 
         degreesLeftToTurn = self.getDegreesLeftToTurn()
-        turningSpeed = 0.5 * abs(degreesLeftToTurn) * AimToDirectionConstants.kP
+        turningSpeed = abs(degreesLeftToTurn) * AimToDirectionConstants.kP
         if AimToDirectionConstants.kUseSqrtControl:
             turningSpeed = math.sqrt(0.5 * turningSpeed)  # will match the non-sqrt value when 50% max speed
         if turningSpeed > abs(self.speed):
@@ -78,10 +84,12 @@ class SwerveToPoint(commands2.Command):
         # now rotate xSpeed and ySpeed into robot coordinates
         speed = Translation2d(x=xSpeed, y=ySpeed).rotateBy(-self.drivetrain.getHeading())
 
-        self.drivetrain.drive(speed.x, speed.y, turningSpeed, fieldRelative=False, rateLimit=False)
+        self.drivetrain.drive(speed.x, speed.y, turningSpeed, fieldRelative=False, rateLimit=self.rateLimit)
 
     def end(self, interrupted: bool):
         self.drivetrain.arcadeDrive(0, 0)
+        if interrupted:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "interrupted")
 
     def isFinished(self) -> bool:
         currentPose = self.drivetrain.getPose()
@@ -89,15 +97,19 @@ class SwerveToPoint(commands2.Command):
 
         # did we overshoot?
         distanceFromInitialPosition = self.initialPosition.distance(currentPosition)
-        if not self.stop and distanceFromInitialPosition > self.initialDistance - 3 * GoToPointConstants.kApproachRadius:
+        if not self.stop and distanceFromInitialPosition > self.initialDistance - GoToPointConstants.kApproachRadius:
+            SmartDashboard.putString("command/c" + self.__class__.__name__, "acceptable")
             return True  # close enough
 
         if distanceFromInitialPosition > self.initialDistance:
+            if not self.overshot:
+                SmartDashboard.putString("command/c" + self.__class__.__name__, "overshooting")
             self.overshot = True
 
         if self.overshot:
             distanceFromTargetDirectionDegrees = self.getDegreesLeftToTurn()
             if abs(distanceFromTargetDirectionDegrees) < 3 * AimToDirectionConstants.kAngleToleranceDegrees:
+                SmartDashboard.putString("command/c" + self.__class__.__name__, "completed")
                 return True  # case 2: overshot in distance and target direction is correct
 
     def getDegreesLeftToTurn(self):
@@ -117,21 +129,32 @@ class SwerveToPoint(commands2.Command):
         return degreesLeftToTurn
 
 
-class SwerveToSide(commands2.Command):
-    def __init__(self, metersToTheLeft: float, drivetrain: DriveSubsystem, speed=1.0) -> None:
+class SwerveMove(commands2.Command):
+    def __init__(
+        self,
+        metersToTheLeft: float,
+        metersBackwards: float,
+        drivetrain: DriveSubsystem,
+        speed=1.0,
+        heading=None
+    ) -> None:
         super().__init__()
         self.drivetrain = drivetrain
         self.addRequirements(drivetrain)
         self.speed = speed
         self.metersToTheLeft = metersToTheLeft
+        self.metersBackwards = metersBackwards
+        self.desiredHeading = heading
         self.subcommand = None
 
     def initialize(self):
         position = self.drivetrain.getPose()
-        heading = position.rotation()
-        target = position.translation() + Translation2d(x=0, y=self.metersToTheLeft).rotateBy(heading)
+        heading = self.desiredHeading if self.desiredHeading is not None else position.rotation()
+        # position.rotation() becomes unstable when NavX resets
+        # (try Pigeon or avoid taking gyro angle when it is rebooting)
+        tgt = position.translation() + Translation2d(x=-self.metersBackwards, y=self.metersToTheLeft).rotateBy(heading)
         self.subcommand = SwerveToPoint(
-            x=target.x, y=target.y, headingDegrees=heading.degrees(), drivetrain=self.drivetrain, speed=self.speed
+            x=tgt.x, y=tgt.y, headingDegrees=heading.degrees(), drivetrain=self.drivetrain, speed=self.speed
         )
         self.subcommand.initialize()
 
@@ -143,3 +166,6 @@ class SwerveToSide(commands2.Command):
 
     def end(self, interrupted: bool):
         self.subcommand.end(interrupted)
+
+
+SwerveToSide = SwerveMove
