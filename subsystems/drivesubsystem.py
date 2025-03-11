@@ -96,13 +96,13 @@ class DriveSubsystem(Subsystem):
         self.field = Field2d()
         SmartDashboard.putData("Field", self.field)
 
-        self.shouldFlipPath = lambda: shouldFlipPath
+        self.shouldFlipPath = lambda: shouldFlipPath()
 
         AutoBuilder.configure(
             self.getPose,  # Robot pose supplier
             self.resetOdometry,  # Method to reset odometry (will be called if your auto has a starting pose)
-            self.getRobotRelativeSpeeds,  # ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-            lambda speeds, feedforwards: self.driveRobotRelative(speeds),
+            lambda: self.swerveModuleStates,  # ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+            lambda speeds, feedforwards: self.drive(speeds),
             # Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also outputs individual module feedforwards
             PPHolonomicDriveController(
                 # PPHolonomicController is the built in path following controller for holonomic drive trains
@@ -110,7 +110,7 @@ class DriveSubsystem(Subsystem):
                 PIDConstants(5.0, 0.0, 0.0)  # Rotation PID constants
             ),
             PathPlannerConstants.config,  # The robot configuration
-            self.shouldFlipPath,  # Supplier to control path flipping based on alliance color
+            self.shouldFlipPath(),  # Supplier to control path flipping based on alliance color
             self  # Reference to this subsystem to set requirements
         )
 
