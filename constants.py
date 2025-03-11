@@ -77,6 +77,10 @@ class IntakeConstants:
     kFollowIntake = 12
     kIntake = 13
 
+class pathplanner:
+    from pathplannerlib.config import RobotConfig
+    config = RobotConfig.fromGUISettings()
+
 def getSwerveDrivingMotorConfig() -> SparkBaseConfig:
     drivingConfig = SparkBaseConfig()
     drivingConfig.setIdleMode(SparkBaseConfig.IdleMode.kBrake)
