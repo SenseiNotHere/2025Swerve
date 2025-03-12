@@ -77,7 +77,7 @@ class IntakeConstants:
     kFollowIntake = 12
     kIntake = 13
 
-class pathplanner:
+class PathPlannerConstants:
     from pathplannerlib.config import RobotConfig
     config = RobotConfig.fromGUISettings()
 

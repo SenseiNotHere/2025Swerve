@@ -26,7 +26,7 @@ class AlignWithTag(commands2.Command):
                  camera,
                  drivetrain,
                  specificHeadingDegrees=None,
-                 speed=0.2,
+                 speed=1.0,
                  reverse=False,
                  pushForwardSeconds=0.0,
                  pushForwardSpeed=0.1,

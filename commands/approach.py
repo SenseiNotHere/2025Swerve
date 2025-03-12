@@ -45,7 +45,7 @@ class ApproachTag(commands2.Command):
         camera,
         drivetrain,
         specificHeadingDegrees=None,
-        speed=0.2,
+        speed=1.0,
         reverse=False,
         pushForwardSeconds=0.0,  # length of final approach
         pushForwardSpeed="unused",
@@ -79,7 +79,7 @@ class ApproachTag(commands2.Command):
         self.approachSpeed = min((1.0, abs(speed)))  # ensure that the speed is between 0.0 and 1.0
         self.pushForwardSeconds = pushForwardSeconds
         if self.pushForwardSeconds is None:
-            self.pushForwardSeconds = Tunable(dashboardName + "BrakeDst", 0.4, (0.0, 2.0))
+            self.pushForwardSeconds = Tunable(dashboardName + "BrakeDst", 1.11999999999, (0.0, 2.0))
         elif not callable(self.pushForwardSeconds):
             self.pushForwardSeconds = lambda : pushForwardSeconds
 
