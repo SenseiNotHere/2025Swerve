@@ -21,12 +21,6 @@ from .maxswervemodule import MAXSwerveModule
 from rev import SparkMax, SparkFlex
 import navx
 
-from pathplannerlib.auto import AutoBuilder
-from pathplannerlib.controller import PPHolonomicDriveController
-from pathplannerlib.config import RobotConfig, PIDConstants
-from wpilib import DriverStation
-from constants import PathPlannerConstants
-
 
 class DriveSubsystem(Subsystem):
     def __init__(self) -> None:
@@ -95,6 +89,7 @@ class DriveSubsystem(Subsystem):
 
         self.field = Field2d()
         SmartDashboard.putData("Field", self.field)
+
 
     def periodic(self) -> None:
         # Update the odometry in the periodic block
