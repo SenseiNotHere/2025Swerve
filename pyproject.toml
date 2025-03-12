@@ -31,5 +31,6 @@ robotpy_extras = [
 requires = [
     "pyntcore",
     "photonlibpy",
-    "robotpy-apriltag"
+    "robotpy-apriltag",
+    "robotpy-pathplannerlib"
 ]

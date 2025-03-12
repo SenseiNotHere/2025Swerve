@@ -96,13 +96,38 @@ class DriveSubsystem(Subsystem):
         self.field = Field2d()
         SmartDashboard.putData("Field", self.field)
 
-        self.shouldFlipPath = lambda: shouldFlipPath()
+        def shouldFlipPath():
+            # Boolean supplier that controls when the path will be mirrored for the red alliance
+            # This will flip the path being followed to the red side of the field.
+            # THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+            return DriverStation.getAlliance() == DriverStation.Alliance.kRed
+
+        self.shouldFlipPath = shouldFlipPath()
+
+        def getRobotRelativeSpeeds(self) -> ChassisSpeeds:
+            """
+            :returns: The current robot-relative ChassisSpeeds.
+            """
+            # Get the current module states
+            fl_state = self.frontLeft.getState()
+            fr_state = self.frontRight.getState()
+            rl_state = self.rearLeft.getState()
+            rr_state = self.rearRight.getState()
+
+            # Calculate the robot-relative ChassisSpeeds
+            speeds = DriveConstants.kDriveKinematics.toChassisSpeeds(
+                fl_state, fr_state, rl_state, rr_state
+            )
+
+            return speeds
+
+        self.getRobotRelativeSpeeds =lambda: getRobotRelativeSpeeds()
 
         AutoBuilder.configure(
             self.getPose,  # Robot pose supplier
             self.resetOdometry,  # Method to reset odometry (will be called if your auto has a starting pose)
-            lambda: self.swerveModuleStates,  # ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-            lambda speeds, feedforwards: self.drive(speeds),
+            self.getRobotRelativeSpeeds,  # ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+            lambda speeds, feedforwards: self.drive(speeds[0], speeds[1], 0, True, True),
             # Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also outputs individual module feedforwards
             PPHolonomicDriveController(
                 # PPHolonomicController is the built in path following controller for holonomic drive trains
@@ -110,15 +135,9 @@ class DriveSubsystem(Subsystem):
                 PIDConstants(5.0, 0.0, 0.0)  # Rotation PID constants
             ),
             PathPlannerConstants.config,  # The robot configuration
-            self.shouldFlipPath(),  # Supplier to control path flipping based on alliance color
+            self.shouldFlipPath,  # Supplier to control path flipping based on alliance color
             self  # Reference to this subsystem to set requirements
         )
-
-        def shouldFlipPath():
-            # Boolean supplier that controls when the path will be mirrored for the red alliance
-            # This will flip the path being followed to the red side of the field.
-            # THE ORIGIN WILL REMAIN ON THE BLUE SIDE
-            return DriverStation.getAlliance() == DriverStation.Alliance.kRed
 
     def periodic(self) -> None:
         # Update the odometry in the periodic block
