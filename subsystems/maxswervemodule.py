@@ -3,8 +3,7 @@ from wpimath.geometry import Rotation2d
 from wpimath.kinematics import SwerveModuleState, SwerveModulePosition
 
 from constants import ModuleConstants, getSwerveDrivingMotorConfig, getSwerveTurningMotorConfig
-from wpilib import SmartDashboard
-import math
+
 
 class MAXSwerveModule:
     def __init__(
@@ -13,7 +12,7 @@ class MAXSwerveModule:
         turningCANId: int,
         chassisAngularOffset: float,
         turnMotorInverted = True,
-        motorControllerType = SparkMax,
+        motorControllerType = SparkFlex,
     ) -> None:
         """Constructs a MAXSwerveModule and configures the driving and turning motor,
         encoder, and PID controller. This configuration is specific to the REV
@@ -29,8 +28,6 @@ class MAXSwerveModule:
         self.turningSparkMax = motorControllerType(
             turningCANId, SparkLowLevel.MotorType.kBrushless
         )
-        self.desiredAngleKey = f"swerveDesiredAngle{turningCANId}"
-        self.reportedAngleKey = f"swerveReportedAngle{turningCANId}"
 
         # Factory reset, so we get the SPARKS MAX to a known state before configuring
         # them. This is useful in case a SPARK MAX is swapped out.
@@ -85,14 +82,11 @@ class MAXSwerveModule:
         :param desiredState: Desired state with speed and angle.
 
         """
-        SmartDashboard.putNumber(self.desiredAngleKey, desiredState.angle.degrees())
-        SmartDashboard.putNumber(self.reportedAngleKey, self.turningEncoder.getPosition() * 180 / math.pi)
-
         if abs(desiredState.speed) < ModuleConstants.kDrivingMinSpeedMetersPerSecond:
             # if WPILib doesn't want us to move at all, don't bother to bring the wheels back to zero angle yet
             # (causes brownout protection when battery is lower: https://youtu.be/0Xi9yb1IMyA)
-            is_x_brake = abs(abs(desiredState.angle.degrees()) - 45) < 0.01
-            if not is_x_brake:
+            inXBrake = abs(abs(desiredState.angle.degrees()) - 45) < 0.01
+            if not inXBrake:
                 self.stop()
                 return
 
@@ -125,10 +119,11 @@ class MAXSwerveModule:
         """
         self.drivingPIDController.setReference(0, SparkLowLevel.ControlType.kVelocity)
         self.turningPIDController.setReference(self.turningEncoder.getPosition(), SparkLowLevel.ControlType.kPosition)
+        if self.desiredState.speed != 0:
+            self.desiredState = SwerveModuleState(speed=0, angle=self.desiredState.angle)
 
     def resetEncoders(self) -> None:
         """
         Zeroes all the SwerveModule encoders.
         """
         self.drivingEncoder.setPosition(0)
-

@@ -1,4 +1,3 @@
-
 #
 # Copyright (c) FIRST and other WPILib contributors.
 # Open Source Software; you can modify and/or share it under the terms of
@@ -18,8 +17,24 @@ from wpilib import Timer, SmartDashboard, SendableChooser
 
 
 class Tunable:
-    def __init__(self, name, default, minMaxRange):
-        self.chooser = SendableChooser()
+    _choosers = {}
+
+    def __init__(self, settings, prefix, name, default, minMaxRange):
+        if settings is not None:
+            if name in settings:
+                self.value = settings[name]
+                self.chooser = None
+                return
+            if (prefix + name) in settings:
+                self.value = settings[prefix + name]
+                self.chooser = None
+                return
+        self.value = None
+        self.chooser = Tunable._choosers.get(prefix + name)
+        if self.chooser is not None:
+            return
+        # if that chooser was not created yet, create it now
+        Tunable._choosers[prefix + name] = self.chooser = SendableChooser()
         for index, factor in enumerate([0, 0.1, 0.17, 0.25, 0.35, 0.5, 0.7, 1.0, 1.4, 2.0, 2.8, 4.0]):
             label, value = f"{factor * default}", factor * default
             if minMaxRange[0] <= value <= minMaxRange[1]:
@@ -28,10 +43,10 @@ class Tunable:
                 else:
                     self.chooser.addOption(label, value)
         SmartDashboard.putData(name, self.chooser)
-        self.value = None
 
     def fetch(self):
-        self.value = self.chooser.getSelected()
+        if self.chooser is not None:
+            self.value = self.chooser.getSelected()
 
     def __call__(self, *args, **kwargs):
         self.fetch()
@@ -47,8 +62,9 @@ class ApproachTag(commands2.Command):
         specificHeadingDegrees=None,
         speed=1.0,
         reverse=False,
+        settings: dict | None=None,
         pushForwardSeconds=0.0,  # length of final approach
-        pushForwardSpeed="unused",
+        finalApproachObjSize=10.0,
         detectionTimeoutSeconds=2.0,
         cameraMinimumFps=4.0,
         dashboardName="apch"
@@ -77,9 +93,10 @@ class ApproachTag(commands2.Command):
 
         self.reverse = reverse
         self.approachSpeed = min((1.0, abs(speed)))  # ensure that the speed is between 0.0 and 1.0
+        self.finalApproachObjSize = finalApproachObjSize
         self.pushForwardSeconds = pushForwardSeconds
         if self.pushForwardSeconds is None:
-            self.pushForwardSeconds = Tunable(dashboardName + "BrakeDst", 1.11999999999, (0.0, 2.0))
+            self.pushForwardSeconds = Tunable(settings, dashboardName, "BrakeDst", 1.11999999999, (0.0, 10.0))
         elif not callable(self.pushForwardSeconds):
             self.pushForwardSeconds = lambda : pushForwardSeconds
 
@@ -112,31 +129,32 @@ class ApproachTag(commands2.Command):
         self.finished = ""
 
         # debugging
+        self.tStart = 0
         self.lastState = self.getState()
         self.lastWarnings = None
 
-        self.initTunables(dashboardName)
+        self.initTunables(settings, dashboardName)
 
 
-    def initTunables(self, prefix):
-        self.KPMULT_TRANSLATION = Tunable(prefix + "GainTran", 0.5, (0.1, 8.0))  # gain for how quickly to move
-        self.KPMULT_ROTATION = Tunable(prefix + "GainRot", 0.5, (0.1, 8.0))  # gail for how quickly to rotate
+    def isReady(self, minRequiredObjectSize=0.3):
+        return self.camera.hasDetection() and self.camera.getA() > minRequiredObjectSize
+
+
+    def initTunables(self, settings, prefix):
+        self.KPMULT_TRANSLATION = Tunable(settings, prefix, "GainTran", 0.7, (0.1, 8.0))  # gain for how quickly to move
+        self.KPMULT_ROTATION = Tunable(settings, prefix, "GainRot", 0.5, (0.1, 8.0))  # gail for how quickly to rotate
 
         # acceptable width of glide path, in inches
-        self.GLIDE_PATH_WIDTH_INCHES = Tunable(prefix + "Tolernce", 2.0, (0.5, 4.0))
-
-        # at the final approach point, object size on camera should be 10% of frame
-        self.OBJ_SIZE_AT_FINAL_APPROACH_PT = Tunable(prefix + "ObjSize", 10.0, (1.0, 15.0))
+        self.GLIDE_PATH_WIDTH_INCHES = Tunable(settings, prefix, "Tolernce", 2.0, (0.5, 4.0))
 
         # if plus minus 30 degrees from desired heading, forward motion is allowed before final approach
-        self.DESIRED_HEADING_RADIUS = Tunable(prefix + "Headng+-", 30, (5, 45))
+        self.DESIRED_HEADING_RADIUS = Tunable(settings, prefix, "Headng+-", 30, (5, 45))
 
         # shape pre final approach: 2 = use parabola for before-final-approach trajectory, 3.0 = use cubic curve, etc.
-        self.APPROACH_SHAPE = Tunable(prefix + "TrjShape", 4.0, (2.0, 8.0))
+        self.APPROACH_SHAPE = Tunable(settings, prefix, "TrjShape", 3.0, (2.0, 8.0))
 
         self.tunables = [
             self.GLIDE_PATH_WIDTH_INCHES,
-            self.OBJ_SIZE_AT_FINAL_APPROACH_PT,
             self.DESIRED_HEADING_RADIUS,
             self.KPMULT_TRANSLATION,
             self.KPMULT_ROTATION,
@@ -150,7 +168,14 @@ class ApproachTag(commands2.Command):
         for t in self.tunables:
             t.fetch()
 
-        self.targetDirection = Rotation2d.fromDegrees(self.targetDegrees())
+        kpMultTran = self.KPMULT_TRANSLATION.value
+        print(f"ApproachTag: translation gain value {kpMultTran}, power={self.APPROACH_SHAPE.value}")
+
+        targetDegrees = self.targetDegrees()
+        if targetDegrees is None:
+            targetDegrees = self.drivetrain.getHeading().degrees()
+
+        self.targetDirection = Rotation2d.fromDegrees(targetDegrees)
         self.tReachedGlidePath = 0.0  # time when reached the glide path
         self.tReachedFinalApproach = 0.0  # time when reached the final approach
         self.lostTag = False
@@ -162,15 +187,14 @@ class ApproachTag(commands2.Command):
         self.finished = ""
 
         # final approach parameters
-        self.tagToFinalApproachPt = self.computeTagDistanceFromTagSizeOnFrame(
-            self.OBJ_SIZE_AT_FINAL_APPROACH_PT.value
-        )
+        self.tagToFinalApproachPt = self.computeTagDistanceFromTagSizeOnFrame(self.finalApproachObjSize)
         self.finalApproachSpeed = 0
         self.finalApproachSeconds = max([0, self.pushForwardSeconds()])
         if self.finalApproachSeconds > 0:
             self.finalApproachSpeed = self.computeProportionalSpeed(self.tagToFinalApproachPt)
 
         # debugging info
+        self.tStart = Timer.getFPGATimestamp()
         self.lastState = -1
         self.lastWarnings = None
         SmartDashboard.putString("command/c" + self.__class__.__name__, "running")
@@ -196,7 +220,6 @@ class ApproachTag(commands2.Command):
         if not self.finished:
             return False
 
-        SmartDashboard.putString("command/c" + self.__class__.__name__, self.finished)
         return True
 
 
@@ -204,12 +227,17 @@ class ApproachTag(commands2.Command):
         self.drivetrain.arcadeDrive(0, 0)
         if interrupted:
             SmartDashboard.putString("command/c" + self.__class__.__name__, "interrupted")
+        else:
+            elapsed = Timer.getFPGATimestamp() - self.tStart
+            SmartDashboard.putString("command/c" + self.__class__.__name__, f"{int(1000 * elapsed)}ms: {self.finished}")
 
 
     def execute(self):
-        # 0. look at the camera
         now = Timer.getFPGATimestamp()
+
+        # 0. look at the camera
         self.updateVision(now)
+        visionOld = (now - self.lastSeenObjectTime) / (0.5 * self.frameTimeoutSeconds)
         if self.lostTag:
             self.drivetrain.stop()
             return
@@ -233,17 +261,17 @@ class ApproachTag(commands2.Command):
             if self.finalApproachSeconds > 0:
                 completedPercentage = (now - self.tReachedFinalApproach) / self.finalApproachSeconds
                 fwdSpeed = self.finalApproachSpeed * max((0.0, 1.0 - completedPercentage))
+            leftSpeed *= max(0.0, 1 - visionOld * visionOld)  # final approach: dial down the left speed if no object
         else:
             # - otherwise slow down if the visual estimate is old or if heading is not right yet
             farFromDesiredHeading = abs(degreesLeftToRotate) / self.DESIRED_HEADING_RADIUS.value
             if farFromDesiredHeading >= 1:
                 warnings = "large heading error"
-            detectionOld = (now - self.lastSeenObjectTime) / (0.5 * self.frameTimeoutSeconds)
-            if detectionOld >= 1:
+            if visionOld >= 1:
                 warnings = "temporarily out of sight"
             # any other reason to slow down? put it above
 
-            problems = max((detectionOld, farFromDesiredHeading))
+            problems = max((visionOld, farFromDesiredHeading))
             fwdSpeed *= max((0.0, 1.0 - problems * problems))
 
         # 5. drive!
@@ -315,7 +343,6 @@ class ApproachTag(commands2.Command):
     def getVisionBasedSwerveDirection(self, now):
         # can we trust the last seen object?
         if not (self.lastSeenObjectSize > 0):
-            SmartDashboard.putString("command/c" + self.__class__.__name__, "never seen")
             return None  # the object is not yet there, hoping that this is temporary
 
         # where are we?
@@ -325,8 +352,9 @@ class ApproachTag(commands2.Command):
         if self.tReachedGlidePath != 0 and self.tReachedFinalApproach == 0 and robotX > 0:
             SmartDashboard.putString("command/c" + self.__class__.__name__, "reached final approach")
             self.tReachedFinalApproach = now
+            print("final approach starting")
 
-        # if we already reached the glide path and we want nonzero final approach (after reaching desired size)
+        # if we already reached the glide path, and we want nonzero final approach (after reaching desired size)
         # ... then go directly towards the tag (x, y = tagX, 0) instead of going towards 0, 0
         if self.tReachedGlidePath != 0 and self.finalApproachSeconds > 0:
             direction = Translation2d(x=tagX - robotX, y=0.0 - robotY)
@@ -356,9 +384,10 @@ class ApproachTag(commands2.Command):
 
 
     def computeProportionalSpeed(self, distance) -> float:
-        velocity = distance * GoToPointConstants.kPTranslate * self.KPMULT_TRANSLATION.value
+        kpMultTran = self.KPMULT_TRANSLATION.value
+        velocity = distance * GoToPointConstants.kPTranslate * kpMultTran
         if GoToPointConstants.kUseSqrtControl:
-            velocity = math.sqrt(0.5 * velocity * self.KPMULT_TRANSLATION.value)
+            velocity = math.sqrt(0.5 * velocity * kpMultTran)
         if velocity > self.approachSpeed:
             velocity = self.approachSpeed
         if velocity < GoToPointConstants.kMinTranslateSpeed:
@@ -376,14 +405,15 @@ class ApproachTag(commands2.Command):
         #
         # in other words, we can use this approximate formula for distance (if we have 0.2 * 0.2 meter AprilTag)
         """
-        return math.sqrt(0.2 * 0.2 / (1.33 * 0.01 * objectSizePercent))
+        return math.sqrt(0.2 * 0.2 / (1.70 * 0.01 * objectSizePercent))
+        # note: Arducam w OV9281 (and Limelight 3 / 4) is 0.57 sq radians (not 1.33)
 
 
     def hasReachedGlidePath(self, degreesLeftToRotate: float, distanceToGlidePath: float) -> bool:
         reachedNow = (
             distanceToGlidePath is not None and
             abs(distanceToGlidePath) < self.GLIDE_PATH_WIDTH_INCHES.value * 0.0254 * 0.5 and
-            abs(degreesLeftToRotate) < 2 * AimToDirectionConstants.kAngleToleranceDegrees
+            abs(degreesLeftToRotate) < 4 * AimToDirectionConstants.kAngleToleranceDegrees
         )
         if self.tReachedGlidePath and not reachedNow:
             print(f"WARNING: not on glide path anymore (distance={distanceToGlidePath}, degrees={degreesLeftToRotate}")
