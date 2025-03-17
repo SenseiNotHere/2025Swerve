@@ -38,7 +38,7 @@ class DriveSubsystem(Subsystem):
             DriveConstants.kFrontLeftTurningCanId,
             DriveConstants.kFrontLeftChassisAngularOffset * enabledChassisAngularOffset,
             turnMotorInverted=ModuleConstants.kTurningMotorInverted,
-            motorControllerType=SparkFlex,
+            motorControllerType=SparkMax,
         )
 
         self.frontRight = MAXSwerveModule(
@@ -46,7 +46,7 @@ class DriveSubsystem(Subsystem):
             DriveConstants.kFrontRightTurningCanId,
             DriveConstants.kFrontRightChassisAngularOffset * enabledChassisAngularOffset,
             turnMotorInverted=ModuleConstants.kTurningMotorInverted,
-            motorControllerType=SparkFlex,
+            motorControllerType=SparkMax,
         )
 
         self.rearLeft = MAXSwerveModule(
@@ -54,7 +54,7 @@ class DriveSubsystem(Subsystem):
             DriveConstants.kRearLeftTurningCanId,
             DriveConstants.kBackLeftChassisAngularOffset * enabledChassisAngularOffset,
             turnMotorInverted=ModuleConstants.kTurningMotorInverted,
-            motorControllerType=SparkFlex,
+            motorControllerType=SparkMax,
         )
 
         self.rearRight = MAXSwerveModule(
@@ -62,7 +62,7 @@ class DriveSubsystem(Subsystem):
             DriveConstants.kRearRightTurningCanId,
             DriveConstants.kBackRightChassisAngularOffset * enabledChassisAngularOffset,
             turnMotorInverted=ModuleConstants.kTurningMotorInverted,
-            motorControllerType=SparkFlex,
+            motorControllerType=SparkMax,
         )
 
         # The gyro sensor
