@@ -96,7 +96,7 @@ class ApproachTag(commands2.Command):
         self.finalApproachObjSize = finalApproachObjSize
         self.pushForwardSeconds = pushForwardSeconds
         if self.pushForwardSeconds is None:
-            self.pushForwardSeconds = Tunable(settings, dashboardName, "BrakeDst", 1.11999999999, (0.0, 10.0))
+            self.pushForwardSeconds = Tunable(settings, dashboardName, "BrakeDst", 0.45, (0.0, 10.0))
         elif not callable(self.pushForwardSeconds):
             self.pushForwardSeconds = lambda : pushForwardSeconds
 
