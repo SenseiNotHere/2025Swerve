@@ -207,15 +207,11 @@ class DriveSubsystem(Subsystem):
         :param rateLimit:     Whether to enable rate limiting for smoother control.
         :param square:        Whether to square the inputs (useful for manual control)
         """
-
         if square:
             rot = rot * abs(rot)
             norm = math.sqrt(xSpeed * xSpeed + ySpeed * ySpeed)
             xSpeed = xSpeed * norm
             ySpeed = ySpeed * norm
-
-        if (abs(xSpeed) > 0.1 or abs(ySpeed) > 0.1):
-            print("")
 
         if (xSpeed != 0 or ySpeed != 0) and self.maxSpeedScaleFactor is not None:
             norm = math.sqrt(xSpeed * xSpeed + ySpeed * ySpeed)

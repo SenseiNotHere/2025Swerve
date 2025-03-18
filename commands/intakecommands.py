@@ -18,7 +18,7 @@ class IntakeGamepiece(commands2.Command):
         self.intake.intakeGamepiece(self.speed)
 
     def isFinished(self) -> bool:
-        return False  # never finishes, you should use it with "withTimeout(...)"
+        return self.intake.isGamepieceInside()
 
     def execute(self):
         pass
