@@ -18,37 +18,37 @@
   "Window": {
     "###FMS": {
       "Collapsed": "0",
-      "Pos": "7,810",
+      "Pos": "5,410",
       "Size": "235,244"
     },
     "###Joysticks": {
       "Collapsed": "0",
-      "Pos": "375,697",
-      "Size": "1156,91"
+      "Pos": "359,532",
+      "Size": "1156,202"
     },
     "###NetworkTables": {
       "Collapsed": "0",
-      "Pos": "375,415",
+      "Pos": "365,240",
       "Size": "1125,277"
     },
     "###NetworkTables Info": {
       "Collapsed": "0",
-      "Pos": "375,195",
+      "Pos": "367,26",
       "Size": "1125,217"
     },
     "###Other Devices": {
       "Collapsed": "0",
-      "Pos": "1537,30",
+      "Pos": "1544,15",
       "Size": "375,1042"
     },
     "###System Joysticks": {
       "Collapsed": "0",
-      "Pos": "-3,481",
+      "Pos": "-4,613",
       "Size": "273,290"
     },
     "###Timing": {
       "Collapsed": "0",
-      "Pos": "7,225",
+      "Pos": "7,205",
       "Size": "188,186"
     },
     "Debug##Default": {
