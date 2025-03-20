@@ -40,9 +40,13 @@ class HolonomicDrive(commands2.Command):
         return False  # never finishes, you should use it with "withTimeout(...)"
 
     def execute(self):
+        fwd = self.forwardSpeed()
+        left = self.leftSpeed()
+        if fwd * fwd + left * left < self.deadband * self.deadband:
+            fwd = left = 0
         self.drivetrain.drive(
-            applyDeadband(self.forwardSpeed(), self.deadband),
-            applyDeadband(self.leftSpeed(), self.deadband),
+            fwd,
+            left,
             applyDeadband(self.rotationSpeed(), self.deadband),
             **self.kwargs
         )

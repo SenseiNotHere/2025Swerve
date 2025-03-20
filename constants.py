@@ -29,7 +29,7 @@ class DriveConstants:
     kMaxSpeedMetersPerSecond = 4.8
     kMaxAngularSpeed = math.tau  # radians per second
 
-    kDirectionSlewRate = 0.005  # radians per second
+    kDirectionSlewRate = 1.0  # radians per second
     kMagnitudeSlewRate = 1.0  # percent per second (1 = 100%)
     kRotationalSlewRate = 1.0  # percent per second (1 = 100%)
 
@@ -51,10 +51,10 @@ class DriveConstants:
     kAssumeZeroOffsets = False
 
     # set the above to == False, if you are using Rev zeroing tool (and you have to tinker with offsets below)
-    kFrontLeftChassisAngularOffset = units.degreesToRadians(177)
+    kFrontLeftChassisAngularOffset = units.degreesToRadians(180)
     kFrontRightChassisAngularOffset = 0
     kBackLeftChassisAngularOffset = units.degreesToRadians(183)
-    kBackRightChassisAngularOffset = 0
+    kBackRightChassisAngularOffset = units.degreesToRadians(-2)
     # SPARK MAX CAN IDs
     kFrontLeftDrivingCanId = 2
     kRearLeftDrivingCanId = 10
@@ -197,7 +197,7 @@ class ModuleConstants:
 
 class OIConstants:
     kDriverControllerPort = 0
-    kDriveDeadband = 0.05
+    kDriveDeadband = 0.02
     kOperatorControllerPort = 1
     kOperatorDeadband = 0.05
 
