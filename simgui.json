@@ -17,7 +17,8 @@
       "/SmartDashboard/apchHeadng+-": "String Chooser",
       "/SmartDashboard/apchObjSize": "String Chooser",
       "/SmartDashboard/apchTolernce": "String Chooser",
-      "/SmartDashboard/apchTrjShape": "String Chooser"
+      "/SmartDashboard/apchTrjShape": "String Chooser",
+      "/SmartDashboard/apmnGainRot": "String Chooser"
     }
   },
   "NetworkTables Info": {
