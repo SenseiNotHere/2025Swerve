@@ -42,7 +42,7 @@ class Tunable:
                     self.chooser.setDefaultOption(label, value)
                 else:
                     self.chooser.addOption(label, value)
-        SmartDashboard.putData(name, self.chooser)
+        SmartDashboard.putData(prefix + name, self.chooser)
 
     def fetch(self):
         if self.chooser is not None:
@@ -67,7 +67,7 @@ class ApproachTag(commands2.Command):
         finalApproachObjSize=10.0,
         detectionTimeoutSeconds=2.0,
         cameraMinimumFps=4.0,
-        dashboardName="apch"
+        dashboardName=""
     ):
         """
         Align the swerve robot to AprilTag precisely and then optionally slowly push it forward for a split second
