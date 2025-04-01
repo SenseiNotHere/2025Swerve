@@ -25,6 +25,7 @@ from constants import IntakeConstants, LiftConstants
 from commands.reset_xy import ResetXY, ResetSwerveFront
 from commands.aimtodirection import AimToDirection
 from commands.approach import ApproachTag
+from commands.approach_manually import ApproachManually
 from commands.arcadedrive import ArcadeDrive
 from commands.elevatorposition import SetElevatorPosition
 from commands.findobject import FindObject
@@ -158,6 +159,8 @@ class RobotContainer:
         swerveToRight = swerveSide(metersToTheLeft=-0.0288, metersBackwards=0.0, drivetrain=self.robotDrive, speed=0.5)
         rightDriverBumper.whileTrue(setPipeline0.andThen(approachTagRight).andThen(swerveToRight))
 
+        self.configureFeederApproachButtons()
+
         # Operator Controller
         leftOperatorBumper = self.operatorController.button(XboxController.Button.kLeftBumper)
         leftOperatorBumper.onTrue(InstantCommand(self.elevator.switchUp, self.elevator))
@@ -176,6 +179,42 @@ class RobotContainer:
         aOperatorButton = self.operatorController.button(XboxController.Button.kA)
         intakeCmd = IntakeGamepiece(self.intake, speed=-0.2)
         aOperatorButton.whileTrue(intakeCmd)
+
+    def configureFeederApproachButtons(self):
+        def approachFeeder(headingDegrees, speed):
+            # pipeline 7 should mean "all feeders" (tag 1,2,12,13)
+            pipeline = SetCameraPipeline(self.backLimelight, 7)
+
+            command = ApproachManually(
+                self.backLimelight,
+                self.robotDrive,
+                speed=speed,
+                specificHeadingDegrees=headingDegrees,
+                reverse=True,
+                settings={"GainTran": 1.1},  # if not precise enough, set it lower
+            )
+
+            return pipeline.andThen(command)
+
+        def rightApproachSpeed():
+            return 0.7 * self.driverController.getRawAxis(XboxController.Axis.kRightTrigger)
+
+        def leftApproachSpeed():
+            return 0.7 * self.driverController.getRawAxis(XboxController.Axis.kLeftTrigger)
+
+        # right and left trigger = manually approach right or left feeder (if in sight)
+        self.driverController.axisGreaterThan(XboxController.Axis.kRightTrigger, 0.1).whileTrue(
+            approachFeeder(
+                headingDegrees=+54,  # right feeder
+                speed=rightApproachSpeed
+            )
+        )
+        self.driverController.axisGreaterThan(XboxController.Axis.kLeftTrigger, 0.1).whileTrue(
+            approachFeeder(
+                headingDegrees=-54,  # left feeder
+                speed=leftApproachSpeed
+            )
+        )
 
     def disablePIDSubsystems(self) -> None:
         """Disables all ProfiledPIDSubsystem and PIDSubsystem instances.
