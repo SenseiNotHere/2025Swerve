@@ -1,6 +1,7 @@
-robotpy==2025.2.1.2
-robotpy-commands-v2==2025.1.1
-robotpy-rev==2025.0.2
-robotpy-navx==2025.0.1
-wpilib==2025.2.1.1
+robotpy
+robotpy-commands-v2
+robotpy-rev
+robotpy-navx
+wpilib
 pyntcore
+photonlibpy

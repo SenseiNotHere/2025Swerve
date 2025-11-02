@@ -10,13 +10,11 @@ numerical or boolean constants. Don't use this for any other purpose!
 
 import math
 
-import rev
+from rev import SparkBase, SparkBaseConfig, ClosedLoopConfig
 from wpimath import units
 from wpimath.geometry import Translation2d
 from wpimath.kinematics import SwerveDrive4Kinematics
 from wpimath.trajectory import TrapezoidProfileRadians
-
-from rev import SparkBase, SparkBaseConfig, ClosedLoopConfig
 
 
 class NeoMotorConstants:
@@ -67,15 +65,6 @@ class DriveConstants:
     kRearRightTurningCanId = 7
 
     kGyroReversed = -1  # can be +1 if not flipped (affects field-relative driving)
-
-class LiftConstants:
-    kLeadLift = 8
-    kFollowLift = 9
-
-class IntakeConstants:
-    kLeadIntake = 11
-    kFollowIntake = 12
-    kIntake = 13
 
 def getSwerveDrivingMotorConfig() -> SparkBaseConfig:
     drivingConfig = SparkBaseConfig()
