@@ -37,7 +37,9 @@ class DriveSubsystem(Subsystem):
             DriveConstants.kFrontLeftDrivingCanId,
             DriveConstants.kFrontLeftTurningCanId,
             DriveConstants.kFrontLeftChassisAngularOffset * enabledChassisAngularOffset,
-            turnMotorInverted=ModuleConstants.kTurningMotorInverted,
+            driveMotorInverted=False,
+            turnMotorInverted=False,
+            encoderInverted=True,
             motorControllerType=SparkMax,
         )
 
@@ -45,7 +47,9 @@ class DriveSubsystem(Subsystem):
             DriveConstants.kFrontRightDrivingCanId,
             DriveConstants.kFrontRightTurningCanId,
             DriveConstants.kFrontRightChassisAngularOffset * enabledChassisAngularOffset,
-            turnMotorInverted=ModuleConstants.kTurningMotorInverted,
+            driveMotorInverted=True,
+            turnMotorInverted=False,
+            encoderInverted=True,
             motorControllerType=SparkMax,
         )
 
@@ -53,7 +57,9 @@ class DriveSubsystem(Subsystem):
             DriveConstants.kRearLeftDrivingCanId,
             DriveConstants.kRearLeftTurningCanId,
             DriveConstants.kBackLeftChassisAngularOffset * enabledChassisAngularOffset,
-            turnMotorInverted=ModuleConstants.kTurningMotorInverted,
+            turnMotorInverted=False,
+            driveMotorInverted=True,
+            encoderInverted=True,
             motorControllerType=SparkMax,
         )
 
@@ -61,7 +67,9 @@ class DriveSubsystem(Subsystem):
             DriveConstants.kRearRightDrivingCanId,
             DriveConstants.kRearRightTurningCanId,
             DriveConstants.kBackRightChassisAngularOffset * enabledChassisAngularOffset,
-            turnMotorInverted=ModuleConstants.kTurningMotorInverted,
+            driveMotorInverted=False,
+            turnMotorInverted=False,
+            encoderInverted=True,
             motorControllerType=SparkMax,
         )
 

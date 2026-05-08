@@ -1,4 +1,4 @@
-from rev import SparkMax, SparkFlex, SparkLowLevel, SparkAbsoluteEncoder, SparkBase
+from rev import SparkMax, SparkFlex, SparkLowLevel, SparkAbsoluteEncoder, SparkBase, ResetMode, PersistMode
 from wpimath.geometry import Rotation2d
 from wpimath.kinematics import SwerveModuleState, SwerveModulePosition
 
@@ -11,8 +11,10 @@ class MAXSwerveModule:
         drivingCANId: int,
         turningCANId: int,
         chassisAngularOffset: float,
+        driveMotorInverted: bool,
         turnMotorInverted = True,
         motorControllerType = SparkFlex,
+        encoderInverted: bool = False
     ) -> None:
         """Constructs a MAXSwerveModule and configures the driving and turning motor,
         encoder, and PID controller. This configuration is specific to the REV
@@ -32,14 +34,14 @@ class MAXSwerveModule:
         # Factory reset, so we get the SPARKS MAX to a known state before configuring
         # them. This is useful in case a SPARK MAX is swapped out.
         self.drivingSparkMax.configure(
-            getSwerveDrivingMotorConfig(),
-            SparkBase.ResetMode.kResetSafeParameters,
-            SparkBase.PersistMode.kPersistParameters)
+            getSwerveDrivingMotorConfig(driveMotorInverted),
+            ResetMode.kResetSafeParameters,
+            PersistMode.kPersistParameters)
 
         self.turningSparkMax.configure(
-            getSwerveTurningMotorConfig(turnMotorInverted),
-            SparkBase.ResetMode.kResetSafeParameters,
-            SparkBase.PersistMode.kPersistParameters)
+            getSwerveTurningMotorConfig(turnMotorInverted, encoderInverted),
+            ResetMode.kResetSafeParameters,
+            PersistMode.kPersistParameters)
 
         # Setup encoders and PID controllers for the driving and turning SPARKS MAX.
         self.drivingEncoder = self.drivingSparkMax.getEncoder()
